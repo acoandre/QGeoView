@@ -1,5 +1,8 @@
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_AUTOMOC ON)
+set(GENERIC_LIB_VERSION "1.0.2")
+
+include(GNUInstallDirs)
 
 find_package(Qt5 REQUIRED COMPONENTS
     Core
@@ -8,7 +11,7 @@ find_package(Qt5 REQUIRED COMPONENTS
     Network
 )
 
-add_library(qgeoview SHARED
+add_library(QGeoView SHARED
     include/QGeoView/QGVGlobal.h
     include/QGeoView/QGVProjection.h
     include/QGeoView/QGVProjectionEPSG3857.h
@@ -55,19 +58,21 @@ add_library(qgeoview SHARED
     src/QGVWidgetText.cpp
 )
 
-target_include_directories(qgeoview
+target_include_directories(QGeoView
     PUBLIC
-        include
+        $<INSTALL_INTERFACE:include>
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
-        include/QGeoView
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/QGeoView>
 )
 
-target_compile_definitions(qgeoview
+target_compile_definitions(QGeoView
     PRIVATE
         QGV_EXPORT
 )
 
-target_link_libraries(qgeoview
+target_link_libraries(QGeoView
     PRIVATE
         Qt5::Core
         Qt5::Gui
@@ -75,15 +80,37 @@ target_link_libraries(qgeoview
         Qt5::Network
 )
 
-add_library(QGeoView ALIAS qgeoview)
-
-install(TARGETS qgeoview LIBRARY
-        RUNTIME DESTINATION bin
-        LIBRARY DESTINATION lib
-        ARCHIVE DESTINATION lib/static
+install(TARGETS QGeoView
+        EXPORT ${CMAKE_PROJECT_NAME}Targets
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}/static
 )
 
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/
         DESTINATION include
         FILES_MATCHING PATTERN "*.h*"
+)
+
+
+include(CMakePackageConfigHelpers)
+set(TARGETS_EXPORT_NAME "${PROJECT_NAME}Targets")
+configure_package_config_file(
+  "Config.cmake.in"
+  "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake"
+  INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}"
+)
+write_basic_package_version_file(
+  "${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake"
+  VERSION ${GENERIC_LIB_VERSION}
+  COMPATIBILITY SameMajorVersion
+)
+install(FILES
+        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}Config.cmake
+        ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}ConfigVersion.cmake
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}
+)
+install(EXPORT ${CMAKE_PROJECT_NAME}Targets
+        NAMESPACE QGeoView::
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${CMAKE_PROJECT_NAME}
 )
